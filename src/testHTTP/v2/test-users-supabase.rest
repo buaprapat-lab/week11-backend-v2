@@ -14,20 +14,20 @@ POST http://localhost:3002/api/v2/users/pg
 Content-Type: application/json
 
 {
-    "username": "Charlie",
+    "username": "Alice",
     "role": "admin",
-    "email": "charlie@example.com",
+    "email": "alice10@example.com",
     "password": "password123"
 }
 
 ### Update a user (Supabase)
-PUT http://localhost:3002/api/v2/users/pg/6018b5b2-0c5f-4708-91d9-011c62456163
+PUT http://localhost:3002/api/v2/users/pg/faab8c97-f7d0-444e-a30a-8789c91e8856
 Content-Type: application/json
 
 {
-    "username": "Charlie Updated",
+    "username": "Alice Updated",
     "role": "user"
 }
 
 ### Delete a user (Supabase)
-DELETE http://localhost:3002/api/v2/users/pg/6018b5b2-0c5f-4708-91d9-011c62456163
+DELETE http://localhost:3002/api/v2/users/pg/faab8c97-f7d0-444e-a30a-8789c91e8856

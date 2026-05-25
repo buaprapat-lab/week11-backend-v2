@@ -1,44 +1,22 @@
 import { Router } from "express";
 import { User } from "../../modules/users/user.model.js";
 import { supabase } from "../../config/supabase.js";
+import {
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../../modules/users/users.controller.js";
 
 export const router = Router();
 
 //MongoDB routes (/api/v2/users)
-const userResponse = (doc) => {
-  const user = doc.toObject();
-  delete user.password;
-  return user;
-};
 
 // GET
-router.get("/", async (req, res) => {
-  try {
-    const users = await User.find();
-    return res.status(200).json({ success: true, data: users });
-  } catch (error) {
-    return res.status(400).json({ success: false, error: error });
-  }
-});
+router.get("/", getUsers);
 
 // POST
-router.post("/", async (req, res) => {
-  const { username, email, password, role } = req.body || {};
-
-  if (!username || !email || !password) {
-    const err = new Error("username, email, and password are required");
-    err.name = "ValidationError";
-    err.status = 400;
-    return res.status(400).json({ success: false, error: err });
-  }
-
-  try {
-    const doc = await User.create({ username, email, password, role });
-    return res.status(201).json({ success: true, data: userResponse(doc) });
-  } catch (err) {
-    return res.status(400).json({ success: false, error: err });
-  }
-});
+router.post("/", createUser);
 
 /* Simple incremental string id based on current mock data
   const nextId = String(
@@ -52,42 +30,10 @@ router.post("/", async (req, res) => {
   return res.status(201).json(newUser); */
 
 // PUT
-router.put("/:id", async (req, res) => {
-  const user = users.find((u) => u.id === req.params.id);
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found!" });
-  }
-
-  const { username, email, password } = req.body;
-
-  if (!username || !email || !password) {
-    return res
-      .status(400)
-      .json({ error: "username, email and password are required!" });
-  }
-
-  user.username = username;
-  user.email = email;
-  user.password = password;
-
-  res.status(200).json(user);
-});
+router.put("/:id", updateUser);
 
 // DELETE
-router.delete("/:id", async (req, res) => {
-  // 1. หาตำแหน่ง index ของ user ตัวที่จะลบใน Array
-  const userIndex = users.findIndex((u) => u.id === req.params.id);
-  // 2. ถ้าหาไม่เจอ (ได้ค่า -1) ให้บอกว่าไม่พบผู้ใช้ และต้อง return ออกไปด้วยเพื่อไม่ให้โค้ดข้างล่างรันต่อ
-  if (userIndex === -1) {
-    return res.status(404).json({ error: "User not found!" });
-  }
-  // 3. ลบข้อมูลจากตำแหน่งที่เจอ 1 ตัว
-  users.splice(userIndex, 1);
-
-  // 4. ส่งคำตอบกลับสำเร็จ
-  return res.status(200).json({ message: "Delete completed" });
-});
+router.delete("/:id", deleteUser);
 
 // Supabase / PostgreSQL routes (/api/v2/users/pg)
 // Password is excluded from SELECT by RLS policy in Supabase
@@ -135,38 +81,57 @@ router.post("/pg", async (req, res) => {
 
 // PUT
 router.put("/pg/:id", async (req, res) => {
-  const user = users.find((u) => u.id === req.params.id);
+  const { username, email, password, role } = req.body || {};
+  const updates = {};
 
-  if (!user) {
-    return res.status(404).json({ error: "User not found!" });
+  if (username !== undefined) updates.username = username;
+  if (email !== undefined) updates.email = email;
+  if (password !== undefined) updates.password = password;
+  if (role !== undefined) updates.role = role;
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: "At least one field is required to update",
+    });
   }
 
-  const { username, email, password } = req.body;
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .update(updates)
+      .eq("id", req.params.id)
+      .select(PG_SELECT);
 
-  if (!username || !email || !password) {
-    return res
-      .status(400)
-      .json({ error: "username, email and password are required!" });
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    return res.status(200).json({ success: true, data: data[0] });
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error.message });
   }
-
-  user.username = username;
-  user.email = email;
-  user.password = password;
-
-  res.status(200).json(user);
 });
 
 // DELETE
 router.delete("/pg/:id", async (req, res) => {
-  // 1. หาตำแหน่ง index ของ user ตัวที่จะลบใน Array
-  const userIndex = users.findIndex((u) => u.id === req.params.id);
-  // 2. ถ้าหาไม่เจอ (ได้ค่า -1) ให้บอกว่าไม่พบผู้ใช้ และต้อง return ออกไปด้วยเพื่อไม่ให้โค้ดข้างล่างรันต่อ
-  if (userIndex === -1) {
-    return res.status(404).json({ error: "User not found!" });
-  }
-  // 3. ลบข้อมูลจากตำแหน่งที่เจอ 1 ตัว
-  users.splice(userIndex, 1);
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", req.params.id)
+      .select("id, username, email, role");
 
-  // 4. ส่งคำตอบกลับสำเร็จ
-  return res.status(200).json({ message: "Delete completed" });
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    return res.status(200).json({ success: true, data: data[0] });
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error.message });
+  }
 });
