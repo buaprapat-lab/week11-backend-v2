@@ -1,21 +1,44 @@
 import { Router } from "express";
+import { User } from "../../modules/users/user.model.js";
 
 export const router = Router();
 
+const userResponse = (doc) => {
+  const user = doc.toObject();
+  delete user.password;
+  return user;
+};
+
 // GET
-router.get("/", (req, res) => {
-  res.json(users);
+router.get("/", async (req, res) => {
+  try {
+    const users = await User.find();
+    return res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error });
+  }
 });
 
 // POST
-router.post("/", (req, res) => {
-  const { username, email } = req.body || {};
+router.post("/", async (req, res) => {
+  const { username, email, password, role } = req.body || {};
 
-  if (!username || !email) {
-    return res.status(400).json({ error: "username and email are required" });
+  if (!username || !email || !password) {
+    const err = new Error("username, email, and password are required");
+    err.name = "ValidationError";
+    err.status = 400;
+    return res.status(400).json({ success: false, error: err });
   }
 
-  // Simple incremental string id based on current mock data
+  try {
+    const doc = await User.create({ username, email, password, role });
+    return res.status(201).json({ success: true, data: userResponse(doc) });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err });
+  }
+});
+
+/* Simple incremental string id based on current mock data
   const nextId = String(
     (users.reduce((max, u) => Math.max(max, Number(u.id)), 0) || 0) + 1,
   );
@@ -24,8 +47,7 @@ router.post("/", (req, res) => {
 
   users.push(newUser);
 
-  return res.status(201).json(newUser);
-});
+  return res.status(201).json(newUser); */
 
 // PUT
 router.put("/:id", (req, res) => {
