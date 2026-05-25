@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { users } from "../../fakeData/fakeUsers.js";
 
 export const router = Router();
 
@@ -51,6 +50,7 @@ router.put("/:id", (req, res) => {
   res.status(200).json(user);
 });
 
+// DELETE
 router.delete("/:id", (req, res) => {
   // 1. หาตำแหน่ง index ของ user ตัวที่จะลบใน Array
   const userIndex = users.findIndex((u) => u.id === req.params.id);
