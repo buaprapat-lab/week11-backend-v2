@@ -47,6 +47,21 @@ app.get("/", (req, res) => {
   </html>`);
 });
 
+//centralized error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res
+    .status(err.status || 500)
+    .json({
+      success: false,
+      message: err.message || "Internal Server Error",
+      path: req.originalUrl,
+      method: req.method,
+      timestamp: new Date().toISOString(),
+      stack: err,
+    });
+});
+
 // ย้ายไปที่ users.routes.js
 // app.get("/users", (req.\, res) => {...})
 
