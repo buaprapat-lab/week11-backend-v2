@@ -1,8 +1,9 @@
 import { User } from "./user.model.js";
+import { hashPassword } from "../../bcrypt/bcrypt.js";
 
 const userResponse = (doc) => {
   const user = doc.toObject();
-  delete user.password;
+  delete user.password; // คอยลบ password ทิ้งก่อนตอบกลับหน้าบ้าน
   return user;
 };
 
@@ -16,7 +17,7 @@ export const getUsers = async (req, res, next) => {
   }
 };
 
-//POST
+//POST /users - สร้างผู้ใช้ใหม่แบบเข้ารหัสปลอดภัย
 
 export const createUser = async (req, res, next) => {
   const { username, email, password, role } = req.body || {};
@@ -30,7 +31,18 @@ export const createUser = async (req, res, next) => {
   }
 
   try {
-    const doc = await User.create({ username, email, password, role });
+    // จุดเปลี่ยนสำคัญ: แย่งเอารหัสผ่านดิบมาเข้าเครื่องปั่นให้กลายเป็นอักษรปริศนา
+    // const doc = await User.create({ username, email, password, role });
+
+    const hashedPassword = await hashPassword(password);
+    // เอา hashedPassword ยัดลงฐานข้อมูลแทนรหัสผ่านตัวเดิม
+    const doc = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+      role,
+    });
+
     return res.status(201).json({ success: true, data: userResponse(doc) });
   } catch (err) {
     //return res.status(400).json({ success: false, error: err });
@@ -38,15 +50,16 @@ export const createUser = async (req, res, next) => {
   }
 };
 
-// PUT
-export const updateUser = async (req, res) => {
+// PUT  /users/:id - อัปเดตผู้ใช้ ต้องดักแฮชรหัสผ่านกรณีมีการสั่งเปลี่ยนรหัส
+export const updateUser = async (req, res, next) => {
   const { username, email, password, role } = req.body || {};
   const updates = {};
 
   if (username) updates.username = username;
   if (email) updates.email = email;
-  if (password) updates.password = password;
   if (role) updates.role = role;
+  // ถ้ามีการส่งรหัสผ่านมาให้เปลี่ยน ก็ต้องแฮชรหัสผ่านใหม่ก่อนที่จะอัปเดตลงฐานข้อมูล
+  if (password) updates.password = await hashPassword(password);
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({
