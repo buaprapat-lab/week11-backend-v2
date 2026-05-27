@@ -32,17 +32,16 @@ export const createUser = async (req, res, next) => {
   }
 
   try {
-    // จุดเปลี่ยนสำคัญ: แย่งเอารหัสผ่านดิบมาเข้าเครื่องปั่นให้กลายเป็นอักษรปริศนา
-    // const doc = await User.create({ username, email, password, role });
+    const doc = await User.create({ username, email, password, role });
 
-    const hashedPassword = await hashPassword(password);
+    /*const hashedPassword = await hashPassword(password);
     // เอา hashedPassword ยัดลงฐานข้อมูลแทนรหัสผ่านตัวเดิม
     const doc = await User.create({
       username,
       email,
       password: hashedPassword,
       role,
-    });
+    });*/
 
     return res.status(201).json({ success: true, data: userResponse(doc) });
   } catch (err) {
