@@ -1,5 +1,6 @@
 import { User } from "./user.model.js";
 import { hashPassword } from "../../bcrypt/bcrypt.js";
+import bcrypt from "bcrypt";
 
 const userResponse = (doc) => {
   const user = doc.toObject();
@@ -46,6 +47,46 @@ export const createUser = async (req, res, next) => {
     return res.status(201).json({ success: true, data: userResponse(doc) });
   } catch (err) {
     //return res.status(400).json({ success: false, error: err });
+    next(err);
+  }
+};
+
+// POST /users/login - ตรวจสอบรหัสผ่านและเข้าสู่ระบบ
+export const loginUser = async (req, res, next) => {
+  const { email, password } = req.body || {};
+
+  // 1. ตรวจสอบว่าหน้าบ้านส่งข้อมูลมาครบไหม
+  if (!email || !password) {
+    const err = new Error("email and password are required");
+    err.name = "ValidationError";
+    err.status = 400;
+    // return res.status(400).json({ success: false, error: err });
+    next(err);
+  }
+
+  try {
+    // 2. ค้นหายูสเซอร์ในฐานข้อมูลด้วย Email
+    const user = await User.findOne({ email }).select("+password");
+    // ถ้าระบบหาอีเมลนี้ไม่เจอในฐานข้อมูล ก็ให้ตอบกลับว่าไม่พบผู้ใช้
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Invalid email or password" });
+    }
+
+    // 3. ใช้ bcrypt.compare เปรียบเทียบรหัสผ่านดิบ กับ รหัสที่ถูกแฮชใน DB
+    // ( user.password คือค่ารหัสตัวยาวๆ ที่ดึงมาจาก MongoDB )
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Invalid credentials" });
+    }
+
+    // 4. ถ้ารหัสผ่านถูกต้อง ส่งข้อมูลยูสเซอร์กลับไป (ใช้ userResponse ดักลบ password ทิ้งเพื่อความปลอดภัย)
+    return res.status(200).json({ success: true, data: userResponse(user) });
+  } catch (err) {
+    // return res.status(400).json({ success: false, error: err });
     next(err);
   }
 };

@@ -20,6 +20,15 @@ Content-Type: application/json
     "password": "password123"
 }
 
+### User login (Supabase)
+POST http://localhost:3002/api/v2/users/pg/login
+Content-Type: application/json  
+
+{
+    "email": "alice10@example.com",
+    "password": "password123"
+}
+
 ### Update a user (Supabase)
 PUT http://localhost:3002/api/v2/users/pg/faab8c97-f7d0-444e-a30a-8789c91e8856
 Content-Type: application/json

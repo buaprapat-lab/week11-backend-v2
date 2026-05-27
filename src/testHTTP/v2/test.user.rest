@@ -1,3 +1,7 @@
+# User API v2 Test Cases
+# MongoDB via Mongoose — Users API (v2)
+# Base: /api/v2/users
+
 ### Read all users
 GET http://localhost:3002/api/v2/users
 
@@ -8,7 +12,16 @@ Content-Type: application/json
 {
     "username": "Charlie",
     "role": "admin",
-    "email": "charlie13@example.com",
+    "email": "charlie16@example.com",
+    "password": "password123"
+}
+
+### User login
+POST http://localhost:3002/api/v2/users/login
+Content-Type: application/json
+
+{
+    "email": "charlie16@example.com",
     "password": "password123"
 }
 

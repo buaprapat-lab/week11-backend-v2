@@ -6,6 +6,7 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  loginUser,
 } from "../../modules/users/users.v2.controller.js";
 
 export const router = Router();
@@ -17,6 +18,7 @@ router.get("/", getUsers);
 
 // POST
 router.post("/", createUser);
+router.post("/login", loginUser);
 
 /* Simple incremental string id based on current mock data
   const nextId = String(
